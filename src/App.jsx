@@ -106,10 +106,16 @@ function alignProcrustes(A, B) {
   const cos = Math.cos(theta);
   const sin = Math.sin(theta);
 
-  return A0.map(([x, y]) => [
-    x * cos - y * sin + cxB,
-    x * sin + y * cos + cyB
+  const aligned = A0.map(([x, y]) => [
+    x * cos - y * sin,
+    x * sin + y * cos
   ]);
+
+  // Escalado y centrado para canvas
+  const scale = canvasSize / 2;
+  const offsetX = canvasSize / 2;
+  const offsetY = canvasSize / 2;
+  return aligned.map(([x, y]) => [x * scale + offsetX, -y * scale + offsetY]);
 }
 
 function findClosestConstellation(drawingPoints) {
@@ -150,6 +156,7 @@ function findClosestConstellation(drawingPoints) {
 export default function App() {
   const canvasRef = useRef(null);
   const isDrawingRef = useRef(false);
+  const drawingRef = useRef([]);
   const [drawing, setDrawing] = useState([]);
   const [matched, setMatched] = useState(null);
   const [alignedStars, setAlignedStars] = useState([]);
@@ -183,24 +190,29 @@ export default function App() {
 
   const start = e => {
     isDrawingRef.current = true;
-    setDrawing([relCoords(e)]);
+    drawingRef.current = [relCoords(e)];
+    setDrawing(drawingRef.current);
   };
 
   const draw = e => {
     if (!isDrawingRef.current) return;
-    setDrawing(prev => [...prev, relCoords(e)]);
+      drawingRef.current = [...drawingRef.current, relCoords(e)];
+      setDrawing(drawingRef.current);
   };
 
   const stop = () => {
     if (!isDrawingRef.current) return;
     isDrawingRef.current = false;
-    const result = findClosestConstellation(drawing);
+
+    const finalDrawing = drawingRef.current;
+    const result = findClosestConstellation(finalDrawing);
     if (result) {
       setMatched(result.name);
       setAlignedStars(result.points);
     }
-
   };
+
+
 
   return (
     <div className="flex flex-col items-center gap-6">
