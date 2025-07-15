@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
-import constellationsData from "d3-celestial/constellations.lines.json";
+import constellationsData from "./constellations.json";
+
 
 const canvasSize = 400;
 
@@ -12,9 +13,11 @@ function projectRaDec([ra, dec]) {
 }
 
 // Preparamos constelaciones con coordenadas de canvas
-const CONSTELLATIONS = constellationsData.map(c => ({
-  name: c.id,
-  stars: c.lines.flat().map(projectRaDec)
+const CONSTELLATIONS = constellationsData.features.map(feature => ({
+  name: feature.id || feature.properties.name || "Unknown",
+  stars: (feature.geometry?.coordinates || feature.properties?.lines || [])
+    .flat()
+    .map(projectRaDec)
 }));
 
 function distance(p1, p2) {
