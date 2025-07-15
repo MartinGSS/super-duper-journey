@@ -24,21 +24,82 @@ function distance(p1, p2) {
   return Math.hypot(p1[0] - p2[0], p1[1] - p2[1]);
 }
 
+function normalize(points, size = 100) {
+  if (points.length === 0) return points;
+
+  const xs = points.map(p => p[0]);
+  const ys = points.map(p => p[1]);
+  const minX = Math.min(...xs);
+  const minY = Math.min(...ys);
+  const maxX = Math.max(...xs);
+  const maxY = Math.max(...ys);
+
+  const scale = size / Math.max(maxX - minX, maxY - minY);
+
+  return points.map(([x, y]) => [
+    (x - minX) * scale,
+    (y - minY) * scale
+  ]);
+}
+
+function resample(points, count) {
+  if (points.length === 0) return [];
+
+  const totalLength = points.reduce((acc, _, i, arr) => {
+    if (i === 0) return 0;
+    return acc + distance(arr[i], arr[i - 1]);
+  }, 0);
+
+  const segmentLength = totalLength / (count - 1);
+  const resampled = [points[0]];
+  let distAcc = 0;
+
+  for (let i = 1; i < points.length && resampled.length < count; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const d = distance(prev, curr);
+
+    if (distAcc + d >= segmentLength) {
+      const ratio = (segmentLength - distAcc) / d;
+      const x = prev[0] + ratio * (curr[0] - prev[0]);
+      const y = prev[1] + ratio * (curr[1] - prev[1]);
+      resampled.push([x, y]);
+      distAcc = 0;
+      points.splice(i, 0, [x, y]); // insert point
+    } else {
+      distAcc += d;
+    }
+  }
+
+  while (resampled.length < count) {
+    resampled.push(points[points.length - 1]);
+  }
+
+  return resampled;
+}
+
 function findClosestConstellation(drawingPoints) {
-  if (drawingPoints.length === 0) return null;
+  if (drawingPoints.length < 2) return null;
+
+  const normalizedDrawing = normalize(drawingPoints);
+  const sampleCount = 10;
+  const drawingSample = resample(normalizedDrawing, sampleCount);
 
   let best = null;
   let bestScore = Infinity;
 
   for (const { name, stars } of CONSTELLATIONS) {
-    const len = Math.min(drawingPoints.length, stars.length);
-    let sum = 0;
-    for (let i = 0; i < len; i++) {
-      sum += distance(drawingPoints[i], stars[i]);
+    const normalizedStars = normalize(stars);
+    const starSample = resample(normalizedStars, sampleCount);
+
+    let totalDist = 0;
+    for (let i = 0; i < sampleCount; i++) {
+      totalDist += distance(drawingSample[i], starSample[i]);
     }
-    const avg = sum / len;
-    if (avg < bestScore) {
-      bestScore = avg;
+
+    const avgDist = totalDist / sampleCount;
+    if (avgDist < bestScore) {
+      bestScore = avgDist;
       best = name;
     }
   }
