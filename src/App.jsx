@@ -78,6 +78,40 @@ function resample(points, count) {
   return resampled;
 }
 
+function reflectX(points) {
+  return points.map(([x, y]) => [x, -y]);
+}
+
+function alignProcrustes(A, B) {
+  const n = A.length;
+
+  const centroid = pts =>
+    pts.reduce(([sx, sy], [x, y]) => [sx + x, sy + y], [0, 0]).map(s => s / n);
+
+  const [cxA, cyA] = centroid(A);
+  const [cxB, cyB] = centroid(B);
+
+  const A0 = A.map(([x, y]) => [x - cxA, y - cyA]);
+  const B0 = B.map(([x, y]) => [x - cxB, y - cyB]);
+
+  let a = 0, b = 0;
+  for (let i = 0; i < n; i++) {
+    const [x1, y1] = A0[i];
+    const [x2, y2] = B0[i];
+    a += x1 * x2 + y1 * y2;
+    b += x1 * y2 - y1 * x2;
+  }
+
+  const theta = Math.atan2(b, a);
+  const cos = Math.cos(theta);
+  const sin = Math.sin(theta);
+
+  return A0.map(([x, y]) => [
+    x * cos - y * sin + cxB,
+    x * sin + y * cos + cyB
+  ]);
+}
+
 function findClosestConstellation(drawingPoints) {
   if (drawingPoints.length < 2) return null;
 
@@ -92,15 +126,19 @@ function findClosestConstellation(drawingPoints) {
     const normalizedStars = normalize(stars);
     const starSample = resample(normalizedStars, sampleCount);
 
-    let totalDist = 0;
-    for (let i = 0; i < sampleCount; i++) {
-      totalDist += distance(drawingSample[i], starSample[i]);
-    }
+    const variants = [drawingSample, reflectX(drawingSample)];
 
-    const avgDist = totalDist / sampleCount;
-    if (avgDist < bestScore) {
-      bestScore = avgDist;
-      best = name;
+    for (const variant of variants) {
+      const aligned = alignProcrustes(variant, starSample);
+
+      const score = aligned.reduce((sum, point, i) => {
+        return sum + distance(point, starSample[i]);
+      }, 0) / sampleCount;
+
+      if (score < bestScore) {
+        bestScore = score;
+        best = name;
+      }
     }
   }
 
