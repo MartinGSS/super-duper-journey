@@ -22,6 +22,62 @@ const CONSTELLATIONS = [
       [220, 140],
     ],
   },
+  {
+    name: "Cassiopeia",
+    stars: [
+      [20, 30],
+      [50, 60],
+      [80, 30],
+      [110, 60],
+      [140, 30],
+    ],
+  },
+  {
+    name: "Cygnus",
+    stars: [
+      [30, 100],
+      [70, 80],
+      [110, 100],
+      [150, 80],
+      [190, 100],
+    ],
+  },
+  {
+    name: "Scorpius",
+    stars: [
+      [20, 120],
+      [40, 150],
+      [60, 180],
+      [80, 160],
+      [100, 140],
+      [120, 160],
+      [140, 180],
+      [160, 150],
+      [180, 120],
+    ],
+  },
+  {
+    name: "Ursa Minor",
+    stars: [
+      [10, 10],
+      [30, 40],
+      [50, 70],
+      [70, 60],
+      [90, 50],
+      [110, 40],
+      [130, 30],
+    ],
+  },
+  {
+    name: "Lyra",
+    stars: [
+      [60, 20],
+      [80, 40],
+      [100, 20],
+      [120, 40],
+      [140, 20],
+    ],
+  },
 ];
 
 function distance(p1, p2) {
@@ -53,7 +109,7 @@ function findClosestConstellation(drawingPoints) {
 
 export default function App() {
   const canvasRef = useRef(null);
-  const isDrawingRef = useRef(false);
+  const isDrawing = useRef(false);
   const [drawing, setDrawing] = useState([]);
   const [matchedConstellation, setMatchedConstellation] = useState(null);
 
@@ -67,32 +123,32 @@ export default function App() {
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(drawing[0][0], drawing[0][1]);
-      for (let i = 1; i < drawing.length; i++) {
-        ctx.lineTo(drawing[i][0], drawing[i][1]);
-      }
+      drawing.slice(1).forEach(([x, y]) => ctx.lineTo(x, y));
       ctx.stroke();
     }
   }, [drawing]);
 
-  function getRelativeCoordinates(e) {
-    const rect = canvasRef.current.getBoundingClientRect();
-    return [e.clientX - rect.left, e.clientY - rect.top];
-  }
-
   function startDrawing(e) {
-    isDrawingRef.current = true;
-    setDrawing([getRelativeCoordinates(e)]);
+    isDrawing.current = true;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setDrawing([[x, y]]);
   }
 
   function draw(e) {
-    if (!isDrawingRef.current) return;
-    setDrawing((prev) => [...prev, getRelativeCoordinates(e)]);
+    if (!isDrawing.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setDrawing((prev) => [...prev, [x, y]]);
   }
 
   function stopDrawing() {
-    if (!isDrawingRef.current) return;
-    isDrawingRef.current = false;
-    setMatchedConstellation(findClosestConstellation(drawing));
+    if (!isDrawing.current) return;
+    isDrawing.current = false;
+    const constellation = findClosestConstellation(drawing);
+    setMatchedConstellation(constellation);
   }
 
   return (
@@ -118,4 +174,3 @@ export default function App() {
     </div>
   );
 }
-
