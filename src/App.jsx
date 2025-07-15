@@ -121,6 +121,7 @@ function findClosestConstellation(drawingPoints) {
 
   let best = null;
   let bestScore = Infinity;
+  let bestAligned = [];
 
   for (const { name, stars } of CONSTELLATIONS) {
     const normalizedStars = normalize(stars);
@@ -138,11 +139,12 @@ function findClosestConstellation(drawingPoints) {
       if (score < bestScore) {
         bestScore = score;
         best = name;
+        bestAligned = aligned;
       }
     }
   }
 
-  return best;
+  return { name: best, points: bestAligned };
 }
 
 export default function App() {
@@ -150,6 +152,7 @@ export default function App() {
   const isDrawingRef = useRef(false);
   const [drawing, setDrawing] = useState([]);
   const [matched, setMatched] = useState(null);
+  const [alignedStars, setAlignedStars] = useState([]);
 
   useEffect(() => {
     const ctx = canvasRef.current.getContext("2d");
@@ -160,6 +163,15 @@ export default function App() {
       ctx.beginPath();
       ctx.moveTo(...drawing[0]);
       drawing.slice(1).forEach(p => ctx.lineTo(...p));
+      ctx.stroke();
+    }
+    // Constelación alineada (blanca)
+    if (alignedStars.length > 1) {
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(...alignedStars[0]);
+      alignedStars.slice(1).forEach(p => ctx.lineTo(...p));
       ctx.stroke();
     }
   }, [drawing]);
@@ -182,7 +194,12 @@ export default function App() {
   const stop = () => {
     if (!isDrawingRef.current) return;
     isDrawingRef.current = false;
-    setMatched(findClosestConstellation(drawing));
+    const result = findClosestConstellation(drawing);
+    if (result) {
+      setMatched(result.name);
+      setAlignedStars(result.points);
+    }
+
   };
 
   return (
