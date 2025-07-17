@@ -50,11 +50,13 @@ export default function App() {
   const canvasRef = useRef(null);
   const isDrawingRef = useRef(false);
   const [drawing, setDrawing] = useState([]);
-  const [matched, setMatched] = useState(null);
+  const [matched, setMatched] = useState(null); // ahora guarda el objeto de la constelación
 
   useEffect(() => {
     const ctx = canvasRef.current.getContext("2d");
     ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+    // Trazo amarillo del usuario
     if (drawing.length > 1) {
       ctx.strokeStyle = "yellow";
       ctx.lineWidth = 2;
@@ -63,7 +65,28 @@ export default function App() {
       drawing.slice(1).forEach(p => ctx.lineTo(...p));
       ctx.stroke();
     }
-  }, [drawing]);
+
+    // Dibujo de la constelación (si hay coincidencia)
+    if (matched?.stars?.length > 1) {
+      ctx.strokeStyle = "white";
+      ctx.fillStyle = "white";
+      ctx.lineWidth = 1.5;
+
+      // Unir estrellas
+      ctx.beginPath();
+      ctx.moveTo(...matched.stars[0]);
+      matched.stars.slice(1).forEach(p => ctx.lineTo(...p));
+      ctx.stroke();
+
+      // Dibujar puntos (estrellas)
+      matched.stars.forEach(([x, y]) => {
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+  }, [drawing, matched]);
 
   function relCoords(e) {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -83,7 +106,11 @@ export default function App() {
   const stop = () => {
     if (!isDrawingRef.current) return;
     isDrawingRef.current = false;
-    setMatched(findClosestConstellation(drawing));
+
+    // Buscar la constelación más cercana y guardar todo el objeto
+    const bestName = findClosestConstellation(drawing);
+    const match = CONSTELLATIONS.find(c => c.name === bestName);
+    setMatched(match || null);
   };
 
   return (
@@ -101,7 +128,7 @@ export default function App() {
       />
       <div className="text-2xl">
         {matched
-          ? <>Constellation: <strong>{matched}</strong></>
+          ? <>Constellation: <strong>{matched.name}</strong></>
           : <>Dibuja líneas para identificar una constelación.</>}
       </div>
     </div>
