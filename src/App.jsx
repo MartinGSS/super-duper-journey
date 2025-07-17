@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import constellationsData from "./constellations.json";
 
 
+
 const canvasSize = 400;
 
 function projectRaDec([ra, dec]) {
@@ -181,7 +182,7 @@ export default function App() {
       alignedStars.slice(1).forEach(p => ctx.lineTo(...p));
       ctx.stroke();
     }
-  }, [drawing]);
+  }, [drawing, alignedStars]);
 
   function relCoords(e) {
     const rect = canvasRef.current.getBoundingClientRect();
