@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect } from "react";
 import constellationsData from "./constellations.json";
 
 
-
 const canvasSize = 400;
 
 function projectRaDec([ra, dec]) {
